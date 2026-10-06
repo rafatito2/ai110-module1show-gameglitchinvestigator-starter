@@ -5,7 +5,15 @@ Uses Streamlit's AppTest to drive app.py the same way a player would
 
 Run: python play_trace.py > game_trace.txt
 """
+import os
+import tempfile
+
 from streamlit.testing.v1 import AppTest
+
+# Keep scripted games out of the player's real high-score file.
+os.environ["HIGH_SCORE_FILE"] = os.path.join(
+    tempfile.mkdtemp(), "highscores.json"
+)
 
 
 def show(at, action):
@@ -30,7 +38,8 @@ def new_session(difficulty="Normal", secret=50):
         at.sidebar.selectbox[0].select(difficulty).run()
     at.session_state["secret"] = secret
     at.run()
-    print(f"\n=== New session: difficulty={difficulty}, secret forced to {secret}")
+    print(f"\n=== New session: difficulty={difficulty}, "
+          f"secret forced to {secret}")
     print(f"    sidebar: {[c.value for c in at.sidebar.caption]}")
     show(at, "page loaded")
     return at

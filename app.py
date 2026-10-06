@@ -1,12 +1,28 @@
+import os
 import random
 import streamlit as st
 
 from logic_utils import (
     check_guess,
     get_range_for_difficulty,
+    get_temperature,
+    load_high_scores,
     parse_guess,
+    record_high_score,
     update_score,
 )
+
+HIGH_SCORE_FILE = os.environ.get(
+    "HIGH_SCORE_FILE",
+    os.path.join(os.path.dirname(__file__), "highscores.json"),
+)
+
+# Hint box color by closeness: red when hot, blue when cold.
+HINT_STYLE = {
+    "🔥 Hot": st.error,
+    "🌡️ Warm": st.warning,
+    "🧊 Cold": st.info,
+}
 
 ATTEMPT_LIMITS = {
     "Easy": 6,
@@ -26,6 +42,7 @@ def start_new_game(difficulty: str):
     st.session_state.status = "playing"
     st.session_state.history = []
     st.session_state.difficulty = difficulty
+    st.session_state.new_high_score = False
 
 
 st.set_page_config(page_title="Glitchy Guesser", page_icon="🎮")
@@ -46,6 +63,12 @@ low, high = get_range_for_difficulty(difficulty)
 
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
+
+st.sidebar.header("🏆 High Scores")
+high_scores = load_high_scores(HIGH_SCORE_FILE)
+for level in ATTEMPT_LIMITS:
+    best = high_scores.get(level)
+    st.sidebar.caption(f"{level}: {best if best is not None else '—'}")
 
 # FIX: changing difficulty kept the old secret, which could be out of range.
 if st.session_state.get("difficulty") != difficulty:
@@ -89,13 +112,21 @@ if submit and st.session_state.status == "playing":
         st.error(err)
     else:
         st.session_state.attempts += 1
-        st.session_state.history.append(guess_int)
 
         # FIX: the secret was passed as a string on even attempts.
         outcome, message = check_guess(guess_int, st.session_state.secret)
+        closeness = get_temperature(
+            guess_int, st.session_state.secret, low, high
+        )
+        st.session_state.history.append({
+            "Attempt": st.session_state.attempts,
+            "Guess": guess_int,
+            "Hint": outcome,
+            "Closeness": closeness,
+        })
 
-        if show_hint:
-            st.warning(message)
+        if show_hint and outcome != "Win":
+            HINT_STYLE[closeness](f"{message} {closeness}")
 
         st.session_state.score = update_score(
             current_score=st.session_state.score,
@@ -106,6 +137,9 @@ if submit and st.session_state.status == "playing":
         if outcome == "Win":
             st.balloons()
             st.session_state.status = "won"
+            st.session_state.new_high_score = record_high_score(
+                HIGH_SCORE_FILE, difficulty, st.session_state.score
+            )
         elif st.session_state.attempts >= attempt_limit:
             st.session_state.status = "lost"
 
@@ -115,6 +149,8 @@ if st.session_state.status == "won":
         f"Final score: {st.session_state.score}. "
         "Start a new game to play again."
     )
+    if st.session_state.new_high_score:
+        st.success(f"🏆 New {difficulty} high score!")
 elif st.session_state.status == "lost":
     st.error(
         f"Out of attempts! The secret was {st.session_state.secret}. "
@@ -126,6 +162,10 @@ status_box.info(
     f"Guess a number between {low} and {high}. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
+
+if st.session_state.history:
+    st.subheader("📋 This game")
+    st.table(st.session_state.history)
 
 st.divider()
 st.caption("Built by an AI that claims this code is production-ready.")

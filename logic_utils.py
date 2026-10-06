@@ -1,4 +1,6 @@
-"""Game logic for the number guessing game, kept separate from the Streamlit UI."""
+"""Game logic for the number guessing game, kept separate from the UI."""
+import json
+import os
 
 DIFFICULTY_RANGES = {
     "Easy": (1, 20),
@@ -38,7 +40,9 @@ def parse_guess(raw: str, low: int = None, high: int = None):
         # FIX: "3.9" used to be truncated to 3 without telling the player.
         return False, None, "Enter a whole number, like 42."
 
-    if (low is not None and value < low) or (high is not None and value > high):
+    too_low = low is not None and value < low
+    too_high = high is not None and value > high
+    if too_low or too_high:
         return False, None, f"Enter a number between {low} and {high}."
 
     return True, value, None
@@ -73,3 +77,52 @@ def update_score(current_score: int, outcome: str, attempt_number: int):
     if outcome in ("Too High", "Too Low"):
         return current_score - 5
     return current_score
+
+
+def get_temperature(guess: int, secret: int, low: int, high: int):
+    """Describe how close a guess is, relative to the size of the range.
+
+    Returns:
+        "🔥 Hot" within 5% of the range, "🌡️ Warm" within 15%,
+        otherwise "🧊 Cold". A correct guess is "🎯 Exact".
+    """
+    distance = abs(guess - secret)
+    if distance == 0:
+        return "🎯 Exact"
+    span = max(high - low, 1)
+    if distance <= span * 0.05:
+        return "🔥 Hot"
+    if distance <= span * 0.15:
+        return "🌡️ Warm"
+    return "🧊 Cold"
+
+
+def load_high_scores(path: str):
+    """Load the best score per difficulty from a JSON file.
+
+    A missing or unreadable file means no high scores yet.
+    """
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def record_high_score(path: str, difficulty: str, score: int):
+    """Save score as the best for this difficulty if it beats the old best.
+
+    Returns:
+        True if score is a new high score, otherwise False.
+    """
+    scores = load_high_scores(path)
+    best = scores.get(difficulty)
+    if best is not None and score <= best:
+        return False
+    scores[difficulty] = score
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(scores, f, indent=2)
+    return True

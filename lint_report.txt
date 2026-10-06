@@ -1,0 +1,11 @@
+$ flake8 app.py   # starter code, before changes
+app.py:4:1: E302 expected 2 blank lines, found 1
+app.py:67:1: E305 expected 2 blank lines after class or function definition, found 1
+
+$ flake8 app.py logic_utils.py play_trace.py tests/   # first draft of fixes
+logic_utils.py:1:80: E501 line too long (83 > 79 characters)
+logic_utils.py:41:80: E501 line too long (80 > 79 characters)
+play_trace.py:33:80: E501 line too long (83 > 79 characters)
+
+$ flake8 app.py logic_utils.py play_trace.py tests/   # final
+(no output = no style violations)
