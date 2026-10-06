@@ -4,6 +4,40 @@
 > page loaded
     [info] Guess a number between 1 and 100. Attempts left: 8
     state: secret=50 attempts=0 score=0 status=playing
+> guess 'abc'
+    [info] Guess a number between 1 and 100. Attempts left: 8
+    [error] Enter a whole number, like 42.
+    state: secret=50 attempts=0 score=0 status=playing
+> guess '60'
+    [info] Guess a number between 1 and 100. Attempts left: 7
+    [warning] Go LOWER! 🌡️ Warm
+    state: secret=50 attempts=1 score=-5 status=playing
+> guess '40'
+    [info] Guess a number between 1 and 100. Attempts left: 6
+    [warning] Go HIGHER! 🌡️ Warm
+    state: secret=50 attempts=2 score=-10 status=playing
+> guess '9'
+    [info] Guess a number between 1 and 100. Attempts left: 5
+    [info] Go HIGHER! 🧊 Cold
+    state: secret=50 attempts=3 score=-15 status=playing
+> guess '50'
+    [info] Guess a number between 1 and 100. Attempts left: 4
+    [success] You won! The secret was 50. Final score: 55. Start a new game to play again.
+    [success] New Normal high score!
+    state: secret=50 attempts=4 score=55 status=won
+> click New Game
+    [info] Guess a number between 1 and 100. Attempts left: 8
+    state: secret=13 attempts=0 score=0 status=playing
+> guess '30'
+    [info] Guess a number between 1 and 100. Attempts left: 7
+    [info] Go LOWER! 🧊 Cold
+    state: secret=13 attempts=1 score=-5 status=playing
+
+=== New session: difficulty=Normal, secret forced to 50
+    sidebar: ['Range: 1 to 100', 'Attempts allowed: 8', 'Easy: —', 'Normal: 55', 'Hard: —']
+> page loaded
+    [info] Guess a number between 1 and 100. Attempts left: 8
+    state: secret=50 attempts=0 score=0 status=playing
 > guess '60'
     [info] Guess a number between 1 and 100. Attempts left: 7
     [warning] Go LOWER! 🌡️ Warm
@@ -22,7 +56,7 @@
     state: secret=50 attempts=4 score=-20 status=playing
 
 === New session: difficulty=Normal, secret forced to 50
-    sidebar: ['Range: 1 to 100', 'Attempts allowed: 8', 'Easy: —', 'Normal: —', 'Hard: —']
+    sidebar: ['Range: 1 to 100', 'Attempts allowed: 8', 'Easy: —', 'Normal: 55', 'Hard: —']
 > page loaded
     [info] Guess a number between 1 and 100. Attempts left: 8
     state: secret=50 attempts=0 score=0 status=playing
@@ -66,7 +100,7 @@
     -> game ended after 9 submissions (limit shown: 8)
 
 === New session: difficulty=Normal, secret forced to 50
-    sidebar: ['Range: 1 to 100', 'Attempts allowed: 8', 'Easy: —', 'Normal: —', 'Hard: —']
+    sidebar: ['Range: 1 to 100', 'Attempts allowed: 8', 'Easy: —', 'Normal: 55', 'Hard: —']
 > page loaded
     [info] Guess a number between 1 and 100. Attempts left: 8
     state: secret=50 attempts=0 score=0 status=playing
@@ -77,11 +111,11 @@
     state: secret=50 attempts=1 score=100 status=won
 > click New Game
     [info] Guess a number between 1 and 100. Attempts left: 8
-    state: secret=52 attempts=0 score=0 status=playing
+    state: secret=23 attempts=0 score=0 status=playing
 > guess '30'
     [info] Guess a number between 1 and 100. Attempts left: 7
-    [info] Go HIGHER! 🧊 Cold
-    state: secret=52 attempts=1 score=-5 status=playing
+    [warning] Go LOWER! 🌡️ Warm
+    state: secret=23 attempts=1 score=-5 status=playing
 
 === New session: difficulty=Easy, secret forced to 5
     sidebar: ['Range: 1 to 20', 'Attempts allowed: 6', 'Easy: —', 'Normal: 100', 'Hard: —']

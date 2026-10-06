@@ -56,8 +56,8 @@ def check_guess(guess: int, secret: int):
         and message is the hint shown to the player.
     """
     # FIX: messages were swapped, and the TypeError fallback that compared
-    # numbers as text ("9" > "50") was removed. Found by replaying the trace
-    # with Claude Code; the real cause was the even-attempt str() in app.py.
+    # numbers as text ("9" > "50") was removed. The root cause was the
+    # even-attempt str() in app.py.
     if guess == secret:
         return "Win", "🎉 Correct!"
     if guess > secret:

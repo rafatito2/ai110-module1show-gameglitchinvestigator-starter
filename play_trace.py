@@ -53,6 +53,15 @@ def guess(at, value):
 
 
 def main():
+    # Session 0: the README demo walkthrough, as one game
+    at = new_session("Normal", 50)
+    for g in ["abc", "60", "40", "9", "50"]:
+        guess(at, g)
+    button(at, "New Game").click()
+    at.run()
+    show(at, "click New Game")
+    guess(at, "30")
+
     # Session 1: hints on a known secret
     at = new_session("Normal", 50)
     for g in ["60", "40", "9", "100"]:

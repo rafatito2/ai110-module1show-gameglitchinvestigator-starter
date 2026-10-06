@@ -22,7 +22,7 @@ Bugs found, each with expected vs. actual behavior and the code that causes it (
 | Input | Expected Behavior | Actual Behavior | Console Output / Error |
 |-------|-------------------|-----------------|------------------------|
 | Normal, secret 50, guess 60 (1st guess) | "Too High" / "Go LOWER!" | "Go HIGHER!" | none — `[warning] Go HIGHER!` in trace |
-| Normal, secret 50, guess 9 (3rd guess, even attempt) | "Too Low" / "Go HIGHER!" | Outcome is "Too High" (string comparison); score goes up 5 | none — state `score=5` after a wrong guess |
+| Normal, secret 50, guess 9 (3rd guess, even attempt) | "Too Low" / "Go HIGHER!" | Outcome is "Too High" (string comparison), and score goes up 5. The message happens to read "Go HIGHER!" only because bug 1 swaps the messages back | none — state `score=5` after a wrong guess |
 | Normal, guess "abc" then keep guessing 10 | "abc" rejected without using an attempt; 8 real guesses allowed | "abc" used an attempt; game over after 7 submissions | `[error] Out of attempts! The secret was 50. Score: -30` |
 | Normal, secret 50, guess 50, then New Game, then guess 30 | New game starts; guess 30 gets a hint | Still shows "You already won"; guess ignored | `[success] You already won. Start a new game to play again.` with `status=won` |
 | Easy difficulty, page load | Prompt says "between 1 and 20" | Prompt says "between 1 and 100" | `[info] Guess a number between 1 and 100. Attempts left: 5` |
@@ -32,30 +32,32 @@ Bugs found, each with expected vs. actual behavior and the code that causes it (
 
 ## 2. How did you use AI as a teammate?
 
-- Which AI tools did you use on this project (for example: ChatGPT, Gemini, Copilot)?
-- Give one example of an AI suggestion that was correct (including what the AI suggested and how you verified the result).
-- Give one example of an AI suggestion you did not accept as written (including what the AI suggested, why you rejected or changed it, and how you verified your version). It does not have to be a suggestion that was wrong: over-engineered, out of scope, harder to read, or a poor fit for this codebase all count.
+I used Claude Code as my coding assistant. For the model comparison I also gave Claude Sonnet and Claude Haiku the same bug.
+
+**AI explanation of a bug.** Guessing 9 against a secret of 50 said "Too High", and only on some turns, so I asked Claude to explain the comparison. It confirmed that `app.py` passes `str(secret)` on even attempts, so `9 > "50"` raises `TypeError`, and the `except` branch in `check_guess` compares `"9"` to `"50"` as text. Text comparison goes character by character, and `'9' > '5'`.
+
+**A correct suggestion.** Claude suggested always passing the secret as an int and deleting the `try/except TypeError` fallback, not patching it. That is correct because it removes the cause: nothing should ever compare a number to a string. I verified it two ways. `test_single_digit_guess_against_two_digit_secret` passes, and the same 9-vs-50 guess in `game_trace_after.txt` now gets "Go HIGHER!" on every attempt, odd or even.
+
+**A suggestion I did not accept as written.** Claude Haiku's fix was to also convert `secret` to `str` inside the `except` block. I rejected it because it keeps comparing text. I pasted its function into a scratch file and ran it, and `check_guess(9, "50")` still returned "Too High". It also left the backwards hints in place. Separately, Sonnet's correct fix still incremented `attempts` before parsing the input, so typing "abc" would still cost a guess. I kept its `check_guess` but moved the increment after validation. The "abc" session in `game_trace_after.txt` (one invalid input, then 8 guesses) confirms that "abc" no longer uses an attempt.
+
+**Starter tests revised.** The starter tests compared `check_guess(...)` to a plain string such as `"Win"`, but the function returns `(outcome, message)`, so those tests could never pass. I kept the function's return shape, because the UI needs the message, and changed the tests to unpack the outcome.
 
 ---
 
 ## 3. Debugging and testing your fixes
 
-- How did you decide whether a bug was really fixed?
-- Describe at least one test you ran (manual or using pytest)  
-  and what it showed you about your code.
-- Did AI help you design or understand any tests? How?
+A bug counted as fixed only when two things were true: a pytest test aimed at that exact bug passed, and the same input in the scripted game (`play_trace.py`) produced the expected message. Comparing `game_trace_before.txt` with `game_trace_after.txt` gives a before/after for every row of the bug log. For example, guess 60 against 50 changed from "Go HIGHER!" to "Go LOWER!". One test that taught me something was `test_first_try_win_scores_100`. The old formula `100 - 10 * (attempt_number + 1)` looked reasonable until the test showed a perfect game scoring 70. I used AI to speed up writing the tests, and checked that each one tests a behavior from the bug log and not how the code is written. The suite now has 20 passing tests.
 
 ---
 
 ## 4. What did you learn about Streamlit and state?
 
-- How would you explain Streamlit "reruns" and session state to a friend who has never used Streamlit?
+Streamlit runs the whole `app.py` script from top to bottom every time you click a button or type something, so normal variables are recreated on every click. `st.session_state` is a dictionary that survives those reruns, which is why the secret, attempts and score live there. This also explains the lagging "Attempts left" bug: the message was drawn near the top of the script, before the code further down processed the click. Fixing it meant reserving a spot with `st.empty()` and filling it in at the end of the run.
 
 ---
 
 ## 5. Looking ahead: your developer habits
 
-- What is one habit or strategy from this project that you want to reuse in future labs or projects?
-  - This could be a testing habit, a prompting strategy, or a way you used Git.
-- What is one thing you would do differently next time you work with AI on a coding task?
-- In one or two sentences, describe how this project changed the way you think about AI generated code.
+- **Habit to keep:** reproduce a bug with a fixed input before fixing it, and keep that input as a test. A script with a fixed secret made every bug repeatable and showed whether a fix worked.
+- **Do differently:** run an AI's fix before trusting it, even when the explanation sounds sure of itself. Haiku's answer read well but did not fix anything.
+- **How my view changed:** AI-generated code can look finished and still be wrong in small ways that only show up with specific inputs. I now treat AI output as a draft that needs a test.
